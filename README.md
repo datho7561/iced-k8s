@@ -20,3 +20,4 @@ I'm using it to learn Rust. It is WIP.
 - Delete any of the above resources
 - View phase of Pods
 - View number of instances that are available for deployments and replication controllers
+- Change Kubernetes contexts from the ones listed in your ~/.kube/config
