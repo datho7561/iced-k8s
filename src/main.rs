@@ -1,34 +1,35 @@
 use crate::error::Error;
-use crate::workloads::Workloads;
+use cluster::Cluster;
 use cluster_object::ClusterObject;
 use iced::widget::{column, container, text};
-use iced::Application;
 use iced::Command;
 use iced::Length;
 use iced::Settings;
 use iced::Theme;
-use messages::Message;
+use iced::{Application, Element};
+use messages::{ClusterMessage, Message};
 use std::time;
 
+mod cluster;
 mod cluster_object;
 mod colours;
 mod error;
+mod kube_context;
+mod kube_interface;
 mod messages;
 mod resource_type;
 mod sizes;
 mod workloads;
 
-// Based on the pokedex entry from the iced repo
-//
+/// Based on the pokedex entry from the iced repo
 pub fn main() -> iced::Result {
     WorkloadExplorer::run(Settings::default())
 }
 
 #[derive(Debug)]
-enum WorkloadExplorer {
-    Fetching { workloads: Option<Workloads> },
-    Fetched { workloads: Workloads },
-    Errored { message: String },
+struct WorkloadExplorer {
+    cluster: Option<Cluster>,
+    error: Option<Error>,
 }
 
 impl Application for WorkloadExplorer {
@@ -39,10 +40,14 @@ impl Application for WorkloadExplorer {
 
     fn new(_flags: ()) -> (Self, iced::Command<Self::Message>) {
         (
-            WorkloadExplorer::Fetching {
-                workloads: Option::None,
+            WorkloadExplorer {
+                cluster: None,
+                error: None,
             },
-            Command::perform(Workloads::fetch_cluster_state(), Message::WorkloadsLoaded),
+            Command::perform(
+                kube_interface::fetch_current_context(),
+                Message::ContextLoaded,
+            ),
         )
     }
 
@@ -52,73 +57,54 @@ impl Application for WorkloadExplorer {
 
     fn update(&mut self, message: Self::Message) -> iced::Command<Self::Message> {
         match message {
-            Message::WorkloadsLoaded(Ok(workloads)) => {
-                *self = WorkloadExplorer::Fetched { workloads };
+            Message::ContextLoaded(Ok(context)) => {
+                self.cluster = Some(Cluster::new(context.clone(), None));
 
-                Command::none()
+                Command::perform(
+                    kube_interface::fetch_cluster_state(context.clone()),
+                    |res| Message::ClusterMessage(ClusterMessage::WorkloadsLoaded(res)),
+                )
             }
-            Message::WorkloadsLoaded(Err(error)) => {
-                *self = WorkloadExplorer::Errored {
-                    message: match error {
-                        Error::KubernetesClientError(message) => message,
-                    },
-                };
-
-                Command::none()
-            }
-            Message::ReloadRequested => {
-                *self = WorkloadExplorer::Fetching {
-                    workloads: match self {
-                        Self::Fetched { workloads } => Some(workloads.clone()),
-                        Self::Fetching { workloads } => workloads.clone(),
-                        Self::Errored { .. } => None,
-                    },
-                };
-
-                Command::perform(Workloads::fetch_cluster_state(), Message::WorkloadsLoaded)
-            }
+            Message::ClusterMessage(message) => match self.cluster {
+                Some(..) => self.cluster.as_mut().expect("content from cluster received, so should be connect to cluster").update(message),
+                None => Command::none(),
+            },
             Message::DeleteRequested(cluster_object) => {
                 Command::perform(ClusterObject::delete(cluster_object), Message::Deleted)
             }
             Message::Deleted(result) => {
                 match result {
                     Err(error) => {
-                        *self = WorkloadExplorer::Errored {
-                            message: match error {
-                                Error::KubernetesClientError(message) => message,
-                            },
-                        };
+                        self.error = Some(error);
                     }
                     Ok(..) => {}
                 }
 
                 Command::none()
             }
+            Message::ContextLoaded(Err(error)) => {
+                self.error = Some(error);
+
+                Command::none()
+            }
         }
     }
 
-    fn view(&self) -> iced::Element<Message> {
-        let content = match self {
-            WorkloadExplorer::Fetching { workloads } => match workloads {
-                Some(existing_workloads) => {
-                    return container(existing_workloads.view())
-                        .width(Length::Fill)
-                        .height(Length::Fill)
-                        .padding(sizes::P)
-                        .into()
-                }
-                None => column![text("Fetching workloads...").size(40),].width(Length::Shrink),
-            },
-            WorkloadExplorer::Errored { message } => {
-                column![text(message).size(40).style(colours::get_red()),].width(Length::Shrink)
-            }
-            WorkloadExplorer::Fetched { workloads } => {
-                return container(workloads.view())
-                    .width(Length::Fill)
-                    .height(Length::Fill)
-                    .padding(sizes::P)
-                    .into()
-            }
+    fn view(&self) -> Element<Message> {
+        let content: Element<Message> = if self.error.is_some() {
+            column![text(self.error.as_ref().unwrap().get_message())
+                .size(40)
+                .style(colours::get_red()),]
+            .width(Length::Shrink)
+            .into()
+        } else if self.cluster.is_some() {
+            return container(self.cluster.as_ref().unwrap().view())
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .padding(sizes::P)
+                .into();
+        } else {
+            text("set ctx :D").into()
         };
 
         container(content)
@@ -130,11 +116,10 @@ impl Application for WorkloadExplorer {
     }
 
     fn subscription(&self) -> iced::Subscription<Message> {
-        match *self {
-            WorkloadExplorer::Errored { .. } => iced::Subscription::none(),
-            WorkloadExplorer::Fetching { .. } => iced::Subscription::none(),
-            WorkloadExplorer::Fetched { .. } => iced::time::every(time::Duration::from_secs(2))
-                .map(|_instant| Message::ReloadRequested),
+        match self.cluster {
+            Some(..) => iced::time::every(time::Duration::from_secs(2))
+                .map(|_instant| Message::ClusterMessage(ClusterMessage::ReloadRequested)),
+            None => iced::Subscription::none(),
         }
     }
 }
