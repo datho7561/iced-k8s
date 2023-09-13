@@ -1,4 +1,7 @@
-use kube::{config::InferConfigError, Error as KubeError};
+use kube::{
+    config::{InferConfigError, KubeconfigError},
+    Error as KubeError,
+};
 
 #[derive(Debug, Clone)]
 pub struct Error {
@@ -6,15 +9,31 @@ pub struct Error {
 }
 
 impl Error {
-    pub fn from_k8s(kube_error: KubeError) -> Error {
-        Error { message: kube_error.to_string() }
-    }
-
-    pub fn from_k8s_config(kube_error: InferConfigError) -> Error {
-        Error { message: kube_error.to_string() }
-    }
-
     pub fn get_message(&self) -> String {
         self.message.clone()
+    }
+}
+
+impl From<KubeError> for Error {
+    fn from(kube_error: KubeError) -> Self {
+        Error {
+            message: kube_error.to_string(),
+        }
+    }
+}
+
+impl From<InferConfigError> for Error {
+    fn from(kube_error: InferConfigError) -> Self {
+        Error {
+            message: kube_error.to_string(),
+        }
+    }
+}
+
+impl From<KubeconfigError> for Error {
+    fn from(kube_error: KubeconfigError) -> Self {
+        Error {
+            message: kube_error.to_string(),
+        }
     }
 }

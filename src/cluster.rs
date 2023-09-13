@@ -30,8 +30,7 @@ impl Cluster {
                 horizontal_space(sizes::SEP),
                 self.context.view(),
                 horizontal_space(sizes::SEP),
-                button(text("Reload"))
-                    .on_press(Message::ClusterMessage(ClusterMessage::ReloadRequested))
+                button(text("Change Context")).on_press(Message::ChangeContextRequested)
             ]
             .width(Length::Fill)
             .spacing(sizes::SEP)
@@ -47,14 +46,12 @@ impl Cluster {
 
         let workloads_content: Element<Message> = match &self.workloads {
             Some(workloads) => workloads.view(),
-            None => {
-                container(text("Unable to load workloads"))
-                    .width(Length::Fill)
-                    .height(Length::Fill)
-                    .center_x()
-                    .center_y()
-                    .into()
-            }
+            None => container(text("Unable to load workloads"))
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .center_x()
+                .center_y()
+                .into(),
         };
 
         column![header, workloads_content].into()
@@ -74,11 +71,10 @@ impl Cluster {
 
                 Command::none()
             }
-            ClusterMessage::ReloadRequested => {
-                Command::perform(kube_interface::fetch_cluster_state(self.context.clone()), |res| {
-                    Message::ClusterMessage(ClusterMessage::WorkloadsLoaded(res))
-                })
-            }
+            ClusterMessage::ReloadRequested => Command::perform(
+                kube_interface::fetch_cluster_state(self.context.clone()),
+                |res| Message::ClusterMessage(ClusterMessage::WorkloadsLoaded(res)),
+            ),
         }
     }
 }

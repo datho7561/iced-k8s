@@ -1,9 +1,9 @@
 use crate::cluster_object::ClusterObject;
-use crate::colours;
+
 use crate::sizes;
 use crate::Message;
-use iced::widget::{button, column, container, horizontal_space, row, text, vertical_rule};
-use iced::{Alignment, Element, Length, Padding};
+use iced::widget::column;
+use iced::Element;
 
 #[derive(Debug, Clone, Default)]
 pub struct Workloads {
@@ -11,9 +11,7 @@ pub struct Workloads {
 }
 
 impl Workloads {
-    pub fn new(
-        cluster_objects: Vec<ClusterObject>,
-    ) -> Workloads {
+    pub fn new(cluster_objects: Vec<ClusterObject>) -> Workloads {
         Workloads { cluster_objects }
     }
 

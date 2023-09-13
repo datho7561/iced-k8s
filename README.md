@@ -7,7 +7,7 @@ and
 
 I'm using it to learn Rust. It is WIP.
 
-### Running
+## Running
 
 1. Install Rust using [rustup](https://rustup.rs/)
 2. Clone this repo.

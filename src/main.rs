@@ -1,6 +1,7 @@
 use crate::error::Error;
 use cluster::Cluster;
 use cluster_object::ClusterObject;
+use context_selector::ContextSelector;
 use iced::widget::{column, container, text};
 use iced::Command;
 use iced::Length;
@@ -13,6 +14,7 @@ use std::time;
 mod cluster;
 mod cluster_object;
 mod colours;
+mod context_selector;
 mod error;
 mod kube_context;
 mod kube_interface;
@@ -20,6 +22,7 @@ mod messages;
 mod resource_type;
 mod sizes;
 mod workloads;
+mod utils;
 
 /// Based on the pokedex entry from the iced repo
 pub fn main() -> iced::Result {
@@ -30,6 +33,7 @@ pub fn main() -> iced::Result {
 struct WorkloadExplorer {
     cluster: Option<Cluster>,
     error: Option<Error>,
+    context_selector: Option<ContextSelector>,
 }
 
 impl Application for WorkloadExplorer {
@@ -43,6 +47,7 @@ impl Application for WorkloadExplorer {
             WorkloadExplorer {
                 cluster: None,
                 error: None,
+                context_selector: None,
             },
             Command::perform(
                 kube_interface::fetch_current_context(),
@@ -55,9 +60,10 @@ impl Application for WorkloadExplorer {
         "Workload Explorer".to_string()
     }
 
-    fn update(&mut self, message: Self::Message) -> iced::Command<Self::Message> {
+    fn update(&mut self, message: Message) -> Command<Message> {
         match message {
             Message::ContextLoaded(Ok(context)) => {
+                self.context_selector = None;
                 self.cluster = Some(Cluster::new(context.clone(), None));
 
                 Command::perform(
@@ -66,7 +72,11 @@ impl Application for WorkloadExplorer {
                 )
             }
             Message::ClusterMessage(message) => match self.cluster {
-                Some(..) => self.cluster.as_mut().expect("content from cluster received, so should be connect to cluster").update(message),
+                Some(..) => self
+                    .cluster
+                    .as_mut()
+                    .expect("content from cluster received, so should be connect to cluster")
+                    .update(message),
                 None => Command::none(),
             },
             Message::DeleteRequested(cluster_object) => {
@@ -83,36 +93,69 @@ impl Application for WorkloadExplorer {
                 Command::none()
             }
             Message::ContextLoaded(Err(error)) => {
+                println!("{}", error.get_message());
+
+                // HACK: learn if there is a nicer way to "rewrite"
+                Command::perform(utils::resolved(), |_ignored| Message::ChangeContextRequested)
+            }
+            Message::ChangeContextRequested => {
+                self.cluster = None;
+                self.error = None;
+
+                Command::perform(
+                    kube_interface::get_all_contexts(),
+                    Message::AllContextsLoaded,
+                )
+            }
+            Message::AllContextsLoaded(Ok(all_contexts)) => {
+                self.context_selector = Some(ContextSelector::new(all_contexts));
+
+                Command::none()
+            }
+            Message::AllContextsLoaded(Err(error)) => {
                 self.error = Some(error);
 
                 Command::none()
             }
+            Message::ContextSelectorMessage(message) => {
+                self.context_selector.as_mut().unwrap().update(message)
+            }
+            Message::ContextSelected(kube_ctx_name) => Command::perform(
+                kube_interface::load_named_context(kube_ctx_name),
+                Message::ContextLoaded,
+            ),
         }
     }
 
     fn view(&self) -> Element<Message> {
-        let content: Element<Message> = if self.error.is_some() {
-            column![text(self.error.as_ref().unwrap().get_message())
-                .size(40)
-                .style(colours::get_red()),]
-            .width(Length::Shrink)
-            .into()
-        } else if self.cluster.is_some() {
-            return container(self.cluster.as_ref().unwrap().view())
-                .width(Length::Fill)
-                .height(Length::Fill)
-                .padding(sizes::P)
-                .into();
-        } else {
-            text("set ctx :D").into()
-        };
-
-        container(content)
+        if self.error.is_some() {
+            container(
+                column![text(self.error.as_ref().unwrap().get_message())
+                    .size(40)
+                    .style(colours::get_red()),]
+                .width(Length::Shrink),
+            )
             .width(Length::Fill)
             .height(Length::Fill)
             .center_x()
             .center_y()
             .into()
+        } else if self.cluster.is_some() {
+            container(self.cluster.as_ref().unwrap().view())
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .padding(sizes::P)
+                .into()
+        } else if self.context_selector.is_some() {
+            self.context_selector.as_ref().unwrap().view()
+        } else {
+            container(text("loading..."))
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .center_x()
+                .center_y()
+                .into()
+        }
     }
 
     fn subscription(&self) -> iced::Subscription<Message> {

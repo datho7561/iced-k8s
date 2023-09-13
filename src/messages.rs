@@ -8,10 +8,20 @@ pub enum Message {
     ClusterMessage(ClusterMessage),
     DeleteRequested(ClusterObject),
     Deleted(Result<ClusterObject, Error>),
+    ChangeContextRequested,
+    AllContextsLoaded(Result<Vec<String>, Error>),
+    ContextSelectorMessage(ContextSelectorMessage),
+    ContextSelected(String),
 }
 
 #[derive(Debug, Clone)]
 pub enum ClusterMessage {
     WorkloadsLoaded(Result<Workloads, Error>),
-    ReloadRequested
+    ReloadRequested,
+}
+
+#[derive(Debug, Clone)]
+pub enum ContextSelectorMessage {
+    DropDownItemSelected(String),
+    DropDownClosed,
 }

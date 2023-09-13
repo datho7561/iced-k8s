@@ -48,7 +48,7 @@ impl ClusterObject {
     }
 
     pub async fn delete(cluster_object: ClusterObject) -> Result<ClusterObject, Error> {
-        let client = Client::try_default().await.map_err(Error::from_k8s)?;
+        let client = Client::try_default().await?;
         client.default_namespace();
 
         match cluster_object.r#type {
@@ -57,40 +57,35 @@ impl ClusterObject {
                 let delete_params = DeleteParams::default();
                 let _ = api
                     .delete(cluster_object.name.as_str(), &delete_params)
-                    .await
-                    .map_err(Error::from_k8s)?;
+                    .await?;
             }
             ResourceType::DaemonSet => {
                 let api: Api<DaemonSet> = Api::default_namespaced(client);
                 let delete_params = DeleteParams::default();
                 let _ = api
                     .delete(cluster_object.name.as_str(), &delete_params)
-                    .await
-                    .map_err(Error::from_k8s)?;
+                    .await?;
             }
             ResourceType::Deployment => {
                 let api: Api<Deployment> = Api::default_namespaced(client);
                 let delete_params = DeleteParams::default();
                 let _ = api
                     .delete(cluster_object.name.as_str(), &delete_params)
-                    .await
-                    .map_err(Error::from_k8s)?;
+                    .await?;
             }
             ResourceType::ReplicaSet => {
                 let api: Api<ReplicaSet> = Api::default_namespaced(client);
                 let delete_params = DeleteParams::default();
                 let _ = api
                     .delete(cluster_object.name.as_str(), &delete_params)
-                    .await
-                    .map_err(Error::from_k8s)?;
+                    .await?;
             }
             ResourceType::StatefulSet => {
                 let api: Api<StatefulSet> = Api::default_namespaced(client);
                 let delete_params = DeleteParams::default();
                 let _ = api
                     .delete(cluster_object.name.as_str(), &delete_params)
-                    .await
-                    .map_err(Error::from_k8s)?;
+                    .await?;
             }
         };
         Ok(cluster_object)
