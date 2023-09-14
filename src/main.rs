@@ -2,6 +2,7 @@ use crate::error::Error;
 use cluster::Cluster;
 use cluster_object::ClusterObject;
 use context_selector::ContextSelector;
+use custom_widgets::toast::{self, Toast};
 use iced::widget::{column, container, text};
 use iced::Command;
 use iced::Length;
@@ -10,12 +11,13 @@ use iced::Theme;
 use iced::{Application, Element};
 use messages::{ClusterMessage, Message};
 use std::time;
-use custom_widgets::toast::{Toast, self};
 
 mod cluster;
 mod cluster_object;
 mod colours;
+mod constants;
 mod context_selector;
+mod custom_widgets;
 mod error;
 mod kube_context;
 mod kube_interface;
@@ -24,7 +26,6 @@ mod resource_type;
 mod sizes;
 mod utils;
 mod workloads;
-mod custom_widgets;
 
 /// Based on the pokedex entry from the iced repo
 pub fn main() -> iced::Result {
@@ -100,7 +101,10 @@ impl Application for WorkloadExplorer {
                 println!("{}", error.get_message());
                 Command::batch(vec![
                     Command::perform(utils::resolved(), |_ignored: ()| {
-                        Message::AddToast("Unable to load given context. Please select a different context.".into())
+                        Message::AddToast(
+                            "Unable to load given context. Please select a different context."
+                                .into(),
+                        )
                     }),
                     Command::perform(utils::resolved(), |_ignored| {
                         Message::ChangeContextRequested
@@ -167,7 +171,6 @@ impl Application for WorkloadExplorer {
             container(self.cluster.as_ref().unwrap().view())
                 .width(Length::Fill)
                 .height(Length::Fill)
-                .padding(sizes::P)
                 .into()
         } else if self.context_selector.is_some() {
             self.context_selector.as_ref().unwrap().view()
@@ -181,13 +184,13 @@ impl Application for WorkloadExplorer {
         };
 
         toast::Manager::new(content, &self.toasts, Message::CloseToast)
-            .timeout(toast::DEFAULT_TIMEOUT * 3)
+            .timeout(constants::TOAST_TIMEOUT)
             .into()
     }
 
     fn subscription(&self) -> iced::Subscription<Message> {
         match self.cluster {
-            Some(..) => iced::time::every(time::Duration::from_secs(2))
+            Some(..) => iced::time::every(time::Duration::from_secs(constants::CLUSTER_REFRESH))
                 .map(|_instant| Message::ClusterMessage(ClusterMessage::ReloadRequested)),
             None => iced::Subscription::none(),
         }

@@ -21,10 +21,10 @@ impl KubeContext {
     pub fn view(&self) -> Element<Message> {
         row![
             text("Cluster:").style(colours::get_grey()),
-            text(self.config.cluster_url.to_string()),
+            text(self.config.cluster_url.to_string()).style(colours::get_white()),
             horizontal_space(sizes::SEP),
             text("Namespace:").style(colours::get_grey()),
-            text(self.config.default_namespace.clone()),
+            text(self.config.default_namespace.clone()).style(colours::get_white()),
         ]
         .spacing(sizes::SEP)
         .into()
