@@ -8,7 +8,7 @@ use crate::{
     kube_interface,
     messages::{ClusterMessage, Message},
     sizes,
-    workloads::Workloads,
+    workloads::Workloads, utils, custom_widgets::circular_loading_spinner,
 };
 
 #[derive(Debug, Clone)]
@@ -46,7 +46,7 @@ impl Cluster {
 
         let workloads_content: Element<Message> = match &self.workloads {
             Some(workloads) => workloads.view(),
-            None => container(text("Unable to load workloads"))
+            None => container(row![circular_loading_spinner::Circular::new(), horizontal_space(sizes::SEP), text("Loading workloads...")].align_items(Alignment::Center))
                 .width(Length::Fill)
                 .height(Length::Fill)
                 .center_x()
@@ -66,10 +66,9 @@ impl Cluster {
             }
             ClusterMessage::WorkloadsLoaded(Err(error)) => {
                 self.workloads = None;
-
                 println!("{}", error.get_message());
 
-                Command::none()
+                Command::perform(utils::resolved(), move |_ignored| Message::AddToast("Unable to load workloads. Make sure the cluster is accessible.".into()))
             }
             ClusterMessage::ReloadRequested => Command::perform(
                 kube_interface::fetch_cluster_state(self.context.clone()),

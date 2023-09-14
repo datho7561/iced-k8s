@@ -12,6 +12,8 @@ pub enum Message {
     AllContextsLoaded(Result<Vec<String>, Error>),
     ContextSelectorMessage(ContextSelectorMessage),
     ContextSelected(String),
+    CloseToast(usize),
+    AddToast(String),
 }
 
 #[derive(Debug, Clone)]

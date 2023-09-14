@@ -10,6 +10,7 @@ use iced::Theme;
 use iced::{Application, Element};
 use messages::{ClusterMessage, Message};
 use std::time;
+use custom_widgets::toast::{Toast, self};
 
 mod cluster;
 mod cluster_object;
@@ -21,8 +22,9 @@ mod kube_interface;
 mod messages;
 mod resource_type;
 mod sizes;
-mod workloads;
 mod utils;
+mod workloads;
+mod custom_widgets;
 
 /// Based on the pokedex entry from the iced repo
 pub fn main() -> iced::Result {
@@ -34,6 +36,7 @@ struct WorkloadExplorer {
     cluster: Option<Cluster>,
     error: Option<Error>,
     context_selector: Option<ContextSelector>,
+    toasts: Vec<Toast>,
 }
 
 impl Application for WorkloadExplorer {
@@ -48,6 +51,7 @@ impl Application for WorkloadExplorer {
                 cluster: None,
                 error: None,
                 context_selector: None,
+                toasts: vec![],
             },
             Command::perform(
                 kube_interface::fetch_current_context(),
@@ -94,9 +98,14 @@ impl Application for WorkloadExplorer {
             }
             Message::ContextLoaded(Err(error)) => {
                 println!("{}", error.get_message());
-
-                // HACK: learn if there is a nicer way to "rewrite"
-                Command::perform(utils::resolved(), |_ignored| Message::ChangeContextRequested)
+                Command::batch(vec![
+                    Command::perform(utils::resolved(), |_ignored: ()| {
+                        Message::AddToast("Unable to load given context. Please select a different context.".into())
+                    }),
+                    Command::perform(utils::resolved(), |_ignored| {
+                        Message::ChangeContextRequested
+                    }),
+                ])
             }
             Message::ChangeContextRequested => {
                 self.cluster = None;
@@ -124,11 +133,25 @@ impl Application for WorkloadExplorer {
                 kube_interface::load_named_context(kube_ctx_name),
                 Message::ContextLoaded,
             ),
+            Message::AddToast(message) => {
+                self.toasts.push(Toast {
+                    title: "Error".into(),
+                    body: message,
+                    status: toast::Status::Danger,
+                });
+
+                Command::none()
+            }
+            Message::CloseToast(index) => {
+                self.toasts.remove(index);
+
+                Command::none()
+            }
         }
     }
 
     fn view(&self) -> Element<Message> {
-        if self.error.is_some() {
+        let content = if self.error.is_some() {
             container(
                 column![text(self.error.as_ref().unwrap().get_message())
                     .size(40)
@@ -155,7 +178,11 @@ impl Application for WorkloadExplorer {
                 .center_x()
                 .center_y()
                 .into()
-        }
+        };
+
+        toast::Manager::new(content, &self.toasts, Message::CloseToast)
+            .timeout(toast::DEFAULT_TIMEOUT * 3)
+            .into()
     }
 
     fn subscription(&self) -> iced::Subscription<Message> {
