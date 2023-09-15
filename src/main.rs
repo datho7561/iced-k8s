@@ -28,6 +28,7 @@ mod resource_type;
 mod sizes;
 mod utils;
 mod workloads;
+mod circular_loading_theme;
 
 /// Based on the pokedex entry from the iced repo
 pub fn main() -> iced::Result {

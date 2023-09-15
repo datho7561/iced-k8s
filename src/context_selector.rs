@@ -1,5 +1,7 @@
 use crate::button_theme::as_button_theme;
 use crate::button_theme::ButtonTheme;
+use crate::circular_loading_theme::CircularLoadingTheme;
+use crate::circular_loading_theme::as_circular_theme;
 use crate::colours;
 use crate::container_theme::as_container_theme;
 use crate::container_theme::ContainerTheme;
@@ -71,7 +73,7 @@ impl ContextSelector {
         };
 
         let loading: Element<Message> = container(if self.loading {
-            Into::<Element<Message>>::into(Circular::new())
+            Into::<Element<Message>>::into(Circular::new().style(as_circular_theme(CircularLoadingTheme::Primary)))
         } else {
             text("").into()
         }).width(Length::Fill).align_x(iced::alignment::Horizontal::Center).into();

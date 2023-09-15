@@ -16,7 +16,7 @@ use crate::{
     kube_interface,
     messages::{ClusterMessage, Message},
     sizes, utils,
-    workloads::Workloads,
+    workloads::Workloads, circular_loading_theme::{as_circular_theme, CircularLoadingTheme},
 };
 
 #[derive(Debug, Clone)]
@@ -95,9 +95,9 @@ impl Cluster {
                         .into(),
                     None => container(
                         row![
-                            circular_loading_spinner::Circular::new(),
+                            circular_loading_spinner::Circular::new().style(as_circular_theme(CircularLoadingTheme::Primary)),
                             horizontal_space(sizes::SEP),
-                            text("Loading workloads...")
+                            text("Loading workloads...").style(colours::get_black())
                         ]
                         .align_items(Alignment::Center),
                     )

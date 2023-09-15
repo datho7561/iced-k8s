@@ -6,6 +6,8 @@ use iced::advanced::widget::tree::{self, Tree};
 use iced::advanced::{Clipboard, Layout, Renderer, Shell, Widget};
 use iced::event;
 use iced::mouse;
+use iced::theme::Custom;
+use iced::theme::palette::Primary;
 use iced::time::Instant;
 use iced::widget::canvas;
 use iced::window::{self, RedrawRequest};
@@ -381,16 +383,31 @@ pub trait StyleSheet {
     fn appearance(&self, style: &Self::Style) -> Appearance;
 }
 
-impl StyleSheet for iced::Theme {
-    type Style = ();
+#[derive(Default)]
+pub enum CircularStyle {
+    #[default]
+    Primary,
 
-    fn appearance(&self, _style: &Self::Style) -> Appearance {
+    Custom(Box<dyn StyleSheet<Style = iced::Theme>>),
+}
+
+impl StyleSheet for iced::Theme {
+    type Style = CircularStyle;
+
+    fn appearance(&self, style: &Self::Style) -> Appearance {
         let palette = self.extended_palette();
 
-        Appearance {
-            background: None,
-            track_color: palette.background.weak.color,
-            bar_color: palette.primary.base.color,
+        match style {
+            CircularStyle::Primary => {
+                Appearance {
+                    background: None,
+                    track_color: palette.background.weak.color,
+                    bar_color: palette.primary.base.color,
+                }
+            },
+            CircularStyle::Custom(value) => {
+                value.appearance(self)
+            }
         }
     }
 }
