@@ -3,6 +3,9 @@ use crate::button_theme::ButtonTheme;
 use crate::colours;
 use crate::container_theme::as_container_theme;
 use crate::container_theme::ContainerTheme;
+use crate::custom_widgets::circular_loading_spinner;
+use crate::custom_widgets::circular_loading_spinner::Circular;
+use crate::kube_interface;
 use crate::messages::ContextSelectorMessage;
 use crate::messages::Message;
 use crate::sizes;
@@ -23,6 +26,7 @@ use iced::{Command, Element};
 pub struct ContextSelector {
     state: combo_box::State<String>,
     selection: Option<String>,
+    loading: bool,
 }
 
 impl ContextSelector {
@@ -30,6 +34,7 @@ impl ContextSelector {
         ContextSelector {
             state: combo_box::State::new(contexts),
             selection: None,
+            loading: false,
         }
     }
 
@@ -42,6 +47,13 @@ impl ContextSelector {
                 Command::none()
             }
             ContextSelectorMessage::DropDownClosed => Command::none(),
+            ContextSelectorMessage::ContextSelected(kube_ctx_name) => {
+                self.loading = true;
+                Command::perform(
+                    kube_interface::load_named_context(kube_ctx_name),
+                    Message::ContextLoaded,
+                )
+            }
         }
     }
 
@@ -53,11 +65,16 @@ impl ContextSelector {
             right: sizes::SEP,
         }));
         set_context_button = match self.selection.as_ref() {
-            Some(selection) => {
-                set_context_button.on_press(Message::ContextSelected(selection.clone()))
-            }
+            Some(selection) => set_context_button
+                .on_press(ContextSelectorMessage::ContextSelected(selection.clone()).into()),
             None => set_context_button,
         };
+
+        let loading: Element<Message> = container(if self.loading {
+            Into::<Element<Message>>::into(Circular::new())
+        } else {
+            text("").into()
+        }).width(Length::Fill).align_x(iced::alignment::Horizontal::Center).into();
 
         container(
             column![
@@ -79,6 +96,7 @@ impl ContextSelector {
                     horizontal_space(Length::Fill),
                     set_context_button.style(as_button_theme(ButtonTheme::Primary))
                 ],
+                loading,
             ]
             .max_width(400)
             .spacing(sizes::SEP),

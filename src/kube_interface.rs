@@ -3,7 +3,7 @@ use k8s_openapi::api::{
     core::v1::Pod,
 };
 use kube::{
-    api::ListParams,
+    api::{ListParams, DeleteParams},
     config::{KubeConfigOptions, Kubeconfig},
     Api, Client, Config,
 };
@@ -15,7 +15,8 @@ use crate::{
 
 pub async fn fetch_current_context() -> Result<KubeContext, Error> {
     let config = Config::infer().await?;
-    Ok(KubeContext::new(config))
+    let namespace = config.default_namespace.clone();
+    Ok(KubeContext::new(config, namespace))
 }
 
 pub async fn fetch_cluster_state(context: KubeContext) -> Result<Workloads, Error> {
@@ -23,7 +24,7 @@ pub async fn fetch_cluster_state(context: KubeContext) -> Result<Workloads, Erro
 
     let mut cluster_objects: Vec<ClusterObject> = vec![];
 
-    let deployments: Api<Deployment> = Api::default_namespaced(client.clone());
+    let deployments: Api<Deployment> = Api::namespaced(client.clone(), &context.get_namespace());
     cluster_objects.extend(
         deployments
             .list(&ListParams::default())
@@ -50,7 +51,7 @@ pub async fn fetch_cluster_state(context: KubeContext) -> Result<Workloads, Erro
                 )
             }),
     );
-    let daemonsets: Api<DaemonSet> = Api::default_namespaced(client.clone());
+    let daemonsets: Api<DaemonSet> = Api::namespaced(client.clone(), &context.get_namespace());
     cluster_objects.extend(
         daemonsets
             .list(&ListParams::default())
@@ -65,7 +66,7 @@ pub async fn fetch_cluster_state(context: KubeContext) -> Result<Workloads, Erro
                 )
             }),
     );
-    let replicasets: Api<ReplicaSet> = Api::default_namespaced(client.clone());
+    let replicasets: Api<ReplicaSet> = Api::namespaced(client.clone(), &context.get_namespace());
     cluster_objects.extend(
         replicasets
             .list(&ListParams::default())
@@ -92,7 +93,7 @@ pub async fn fetch_cluster_state(context: KubeContext) -> Result<Workloads, Erro
                 )
             }),
     );
-    let statefulsets: Api<StatefulSet> = Api::default_namespaced(client.clone());
+    let statefulsets: Api<StatefulSet> = Api::namespaced(client.clone(), &context.get_namespace());
     cluster_objects.extend(
         statefulsets
             .list(&ListParams::default())
@@ -107,7 +108,7 @@ pub async fn fetch_cluster_state(context: KubeContext) -> Result<Workloads, Erro
                 )
             }),
     );
-    let pods: Api<Pod> = Api::default_namespaced(client.clone());
+    let pods: Api<Pod> = Api::namespaced(client.clone(), &context.get_namespace());
     cluster_objects.extend(
         pods.list(&ListParams::default())
             .await?
@@ -145,5 +146,71 @@ pub async fn load_named_context(name: String) -> Result<KubeContext, Error> {
         user: None,
     })
     .await?;
-    Ok(KubeContext::new(config))
+    let namespace = config.default_namespace.clone();
+    let kube_ctx = KubeContext::new(config, namespace);
+    check_cluster_accessible(kube_ctx.clone()).await?;
+    Ok(kube_ctx)
+}
+
+/// Deletes the given `cluster_object` from the cluster and namespace given by `context`
+///
+/// # Returns
+/// The cluster object that was deleted, or an error if the cluster object couldn't be deleted.
+pub async fn delete(context: KubeContext, cluster_object: ClusterObject) -> Result<ClusterObject, Error> {
+    let client = Client::try_from(context.get_config().to_owned())?;
+
+    match cluster_object.r#type {
+        ResourceType::Pod => {
+            let api: Api<Pod> = Api::namespaced(client, &context.get_namespace());
+            let delete_params = DeleteParams::default();
+            let _ = api
+                .delete(cluster_object.name.as_str(), &delete_params)
+                .await?;
+        }
+        ResourceType::DaemonSet => {
+            let api: Api<DaemonSet> = Api::namespaced(client, &context.get_namespace());
+            let delete_params = DeleteParams::default();
+            let _ = api
+                .delete(cluster_object.name.as_str(), &delete_params)
+                .await?;
+        }
+        ResourceType::Deployment => {
+            let api: Api<Deployment> = Api::namespaced(client, &context.get_namespace());
+            let delete_params = DeleteParams::default();
+            let _ = api
+                .delete(cluster_object.name.as_str(), &delete_params)
+                .await?;
+        }
+        ResourceType::ReplicaSet => {
+            let api: Api<ReplicaSet> = Api::namespaced(client, &context.get_namespace());
+            let delete_params = DeleteParams::default();
+            let _ = api
+                .delete(cluster_object.name.as_str(), &delete_params)
+                .await?;
+        }
+        ResourceType::StatefulSet => {
+            let api: Api<StatefulSet> = Api::namespaced(client, &context.get_namespace());
+            let delete_params = DeleteParams::default();
+            let _ = api
+                .delete(cluster_object.name.as_str(), &delete_params)
+                .await?;
+        }
+    };
+    Ok(cluster_object)
+}
+
+/// # Returns
+/// An empty result if the namespace given by `context` is accessible,
+/// or an error if it's not accessible
+pub async fn check_namespace_accessible(context: KubeContext) -> Result<(), Error> {
+    let client = Client::try_from(context.get_config().to_owned())?;
+    let pods: Api<Pod> = Api::namespaced(client.clone(), &context.get_namespace());
+    pods.list(&ListParams::default()).await?;
+    Ok(())
+}
+
+async fn check_cluster_accessible(context: KubeContext) -> Result<(), Error> {
+    let client = Client::try_from(context.get_config().to_owned())?;
+    client.apiserver_version().await?;
+    Ok(())
 }

@@ -1,6 +1,5 @@
 use crate::error::Error;
 use cluster::Cluster;
-use cluster_object::ClusterObject;
 use container_theme::{as_container_theme, ContainerTheme};
 use context_selector::ContextSelector;
 use custom_widgets::toast::{self, Toast};
@@ -74,10 +73,7 @@ impl Application for WorkloadExplorer {
                 self.context_selector = None;
                 self.cluster = Some(Cluster::new(context.clone(), None));
 
-                Command::perform(
-                    kube_interface::fetch_cluster_state(context.clone()),
-                    |res| Message::ClusterMessage(ClusterMessage::WorkloadsLoaded(res)),
-                )
+                Command::none()
             }
             Message::ClusterMessage(message) => match self.cluster {
                 Some(..) => self
@@ -87,19 +83,6 @@ impl Application for WorkloadExplorer {
                     .update(message),
                 None => Command::none(),
             },
-            Message::DeleteRequested(cluster_object) => {
-                Command::perform(ClusterObject::delete(cluster_object), Message::Deleted)
-            }
-            Message::Deleted(result) => {
-                match result {
-                    Err(error) => {
-                        self.error = Some(error);
-                    }
-                    Ok(..) => {}
-                }
-
-                Command::none()
-            }
             Message::ContextLoaded(Err(error)) => {
                 println!("{}", error.get_message());
                 Command::batch(vec![
@@ -136,10 +119,6 @@ impl Application for WorkloadExplorer {
             Message::ContextSelectorMessage(message) => {
                 self.context_selector.as_mut().unwrap().update(message)
             }
-            Message::ContextSelected(kube_ctx_name) => Command::perform(
-                kube_interface::load_named_context(kube_ctx_name),
-                Message::ContextLoaded,
-            ),
             Message::AddToast(message) => {
                 self.toasts.push(Toast {
                     title: "Error".into(),

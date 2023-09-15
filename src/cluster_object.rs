@@ -8,7 +8,10 @@ use k8s_openapi::api::{
 };
 use kube::{api::DeleteParams, Api, Client};
 
-use crate::{colours, error::Error, resource_type::ResourceType, sizes, Message};
+use crate::{
+    colours, error::Error, kube_context::KubeContext, messages::ClusterMessage,
+    resource_type::ResourceType, sizes, Message,
+};
 
 #[derive(Debug, Clone)]
 pub struct ClusterObject {
@@ -51,54 +54,12 @@ impl ClusterObject {
                 })
             )
             .style(iced::theme::Button::Destructive)
-            .on_press(Message::DeleteRequested(self.to_owned()))
+            .on_press(Message::ClusterMessage(ClusterMessage::DeleteRequested(
+                self.to_owned()
+            )))
         ]
         .spacing(sizes::P * 2.0)
         .align_items(Alignment::Center)
         .into()
-    }
-
-    pub async fn delete(cluster_object: ClusterObject) -> Result<ClusterObject, Error> {
-        let client = Client::try_default().await?;
-        client.default_namespace();
-
-        match cluster_object.r#type {
-            ResourceType::Pod => {
-                let api: Api<Pod> = Api::default_namespaced(client);
-                let delete_params = DeleteParams::default();
-                let _ = api
-                    .delete(cluster_object.name.as_str(), &delete_params)
-                    .await?;
-            }
-            ResourceType::DaemonSet => {
-                let api: Api<DaemonSet> = Api::default_namespaced(client);
-                let delete_params = DeleteParams::default();
-                let _ = api
-                    .delete(cluster_object.name.as_str(), &delete_params)
-                    .await?;
-            }
-            ResourceType::Deployment => {
-                let api: Api<Deployment> = Api::default_namespaced(client);
-                let delete_params = DeleteParams::default();
-                let _ = api
-                    .delete(cluster_object.name.as_str(), &delete_params)
-                    .await?;
-            }
-            ResourceType::ReplicaSet => {
-                let api: Api<ReplicaSet> = Api::default_namespaced(client);
-                let delete_params = DeleteParams::default();
-                let _ = api
-                    .delete(cluster_object.name.as_str(), &delete_params)
-                    .await?;
-            }
-            ResourceType::StatefulSet => {
-                let api: Api<StatefulSet> = Api::default_namespaced(client);
-                let delete_params = DeleteParams::default();
-                let _ = api
-                    .delete(cluster_object.name.as_str(), &delete_params)
-                    .await?;
-            }
-        };
-        Ok(cluster_object)
     }
 }

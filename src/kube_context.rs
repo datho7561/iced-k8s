@@ -11,11 +11,12 @@ use crate::{colours, messages::Message, sizes};
 #[derive(Debug, Clone)]
 pub struct KubeContext {
     config: Config,
+    namespace: String,
 }
 
 impl KubeContext {
-    pub fn new(config: Config) -> KubeContext {
-        KubeContext { config }
+    pub fn new(config: Config, namespace: String) -> KubeContext {
+        KubeContext { config, namespace }
     }
 
     pub fn view(&self) -> Element<Message> {
@@ -24,7 +25,7 @@ impl KubeContext {
             text(self.config.cluster_url.to_string()).style(colours::get_white()),
             horizontal_space(sizes::SEP),
             text("Namespace:").style(colours::get_grey()),
-            text(self.config.default_namespace.clone()).style(colours::get_white()),
+            text(self.namespace.clone()).style(colours::get_white()),
         ]
         .spacing(sizes::SEP)
         .into()
@@ -32,6 +33,10 @@ impl KubeContext {
 
     pub fn get_config(&self) -> &Config {
         &self.config
+    }
+
+    pub fn get_namespace(&self) -> String {
+        self.namespace.clone()
     }
 }
 
