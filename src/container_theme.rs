@@ -1,4 +1,7 @@
-use iced::{Theme, widget::container::{self}};
+use iced::{
+    widget::container::{self},
+    Theme,
+};
 
 use crate::colours;
 
@@ -22,7 +25,5 @@ impl iced::widget::container::StyleSheet for ContainerTheme {
 }
 
 pub fn as_container_theme(theme: ContainerTheme) -> iced::theme::Container {
-    iced::theme::Container::Custom(Box::new(
-        theme,
-    ))
+    iced::theme::Container::Custom(Box::new(theme))
 }

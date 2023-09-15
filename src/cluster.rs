@@ -4,6 +4,7 @@ use iced::{
 };
 
 use crate::{
+    button_theme::{as_button_theme, ButtonTheme},
     colours,
     container_theme::{as_container_theme, ContainerTheme},
     custom_widgets::circular_loading_spinner,
@@ -11,7 +12,7 @@ use crate::{
     kube_interface,
     messages::{ClusterMessage, Message},
     sizes, utils,
-    workloads::Workloads, button_theme::{as_button_theme, ButtonTheme},
+    workloads::Workloads,
 };
 
 #[derive(Debug, Clone)]
@@ -38,7 +39,9 @@ impl Cluster {
                         top: 0.0,
                         left: sizes::SEP,
                         right: sizes::SEP,
-                    })).on_press(Message::ChangeContextRequested).style(as_button_theme(ButtonTheme::Secondary))
+                    }))
+                    .on_press(Message::ChangeContextRequested)
+                    .style(as_button_theme(ButtonTheme::Secondary))
                 ]
                 .width(Length::Fill)
                 .spacing(sizes::SEP)
@@ -48,8 +51,8 @@ impl Cluster {
             .padding(Padding {
                 bottom: sizes::SEP,
                 top: sizes::SEP,
-                left: 2.0*sizes::SEP,
-                right: 2.0*sizes::SEP,
+                left: 2.0 * sizes::SEP,
+                right: 2.0 * sizes::SEP,
             }),
         )
         .style(as_container_theme(ContainerTheme::Dark));

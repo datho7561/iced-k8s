@@ -19,31 +19,31 @@ pub fn get_red() -> Color {
 /// Lavendar blush
 /// background and white text
 pub fn get_white() -> Color {
-    Color::from([250.0/255.0, 232.0/255.0, 235.0/255.0])
+    Color::from([250.0 / 255.0, 232.0 / 255.0, 235.0 / 255.0])
 }
 
 /// Federal blue
 /// strong accent
 pub fn get_blue() -> Color {
-    Color::from([10.0/255.0, 1.0/255.0, 79.0/255.0])
+    Color::from([10.0 / 255.0, 1.0 / 255.0, 79.0 / 255.0])
 }
 
 /// Cordovan
 /// secondary text
 pub fn get_grey() -> Color {
-    Color::from([169.0/255.0, 112.0/255.0, 118.0/255.0])
+    Color::from([169.0 / 255.0, 112.0 / 255.0, 118.0 / 255.0])
 }
 
 /// Lilac
 /// Secondary accent
 pub fn get_lilac() -> Color {
-    Color::from([205.0/255.0, 159.0/255.0, 204.0/255.0])
+    Color::from([205.0 / 255.0, 159.0 / 255.0, 204.0 / 255.0])
 }
 
 /// Deep wine
 /// black text
 pub fn get_black() -> Color {
-    Color::from([22.0/255.0, 4.0/255.0, 13.0/255.0])
+    Color::from([22.0 / 255.0, 4.0 / 255.0, 13.0 / 255.0])
 }
 
 /// desaturate the given colour.

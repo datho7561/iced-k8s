@@ -1,13 +1,12 @@
-use crate::button_theme::ButtonTheme;
 use crate::button_theme::as_button_theme;
+use crate::button_theme::ButtonTheme;
 use crate::colours;
-use crate::container_theme::ContainerTheme;
 use crate::container_theme::as_container_theme;
+use crate::container_theme::ContainerTheme;
 use crate::messages::ContextSelectorMessage;
 use crate::messages::Message;
 use crate::sizes;
 use crate::sizes::H2;
-use iced::Padding;
 use iced::widget::container;
 use iced::widget::horizontal_space;
 use iced::widget::row;
@@ -17,6 +16,7 @@ use iced::widget::{
     text,
 };
 use iced::Length;
+use iced::Padding;
 use iced::{Command, Element};
 
 #[derive(Debug, Clone)]
@@ -61,7 +61,9 @@ impl ContextSelector {
 
         container(
             column![
-                text("Pick a new context to use").size(H2).style(colours::get_black()),
+                text("Pick a new context to use")
+                    .size(H2)
+                    .style(colours::get_black()),
                 combo_box_fun(
                     &self.state,
                     "New context to view",
@@ -73,7 +75,10 @@ impl ContextSelector {
                 .on_close(Message::ContextSelectorMessage(
                     ContextSelectorMessage::DropDownClosed
                 )),
-                row![horizontal_space(Length::Fill), set_context_button.style(as_button_theme(ButtonTheme::Primary))],
+                row![
+                    horizontal_space(Length::Fill),
+                    set_context_button.style(as_button_theme(ButtonTheme::Primary))
+                ],
             ]
             .max_width(400)
             .spacing(sizes::SEP),

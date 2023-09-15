@@ -1,4 +1,7 @@
-use iced::{Theme, widget::button::{self}, Vector};
+use iced::{
+    widget::button::{self},
+    Theme, Vector,
+};
 
 use crate::{colours, sizes};
 
@@ -11,7 +14,6 @@ impl iced::widget::button::StyleSheet for ButtonTheme {
     type Style = Theme;
 
     fn active(&self, _style: &Self::Style) -> button::Appearance {
-
         let colour = match self {
             ButtonTheme::Primary => colours::get_blue(),
             ButtonTheme::Secondary => colours::get_lilac(),
@@ -30,7 +32,5 @@ impl iced::widget::button::StyleSheet for ButtonTheme {
 }
 
 pub fn as_button_theme(theme: ButtonTheme) -> iced::theme::Button {
-    iced::theme::Button::Custom(Box::new(
-        theme,
-    ))
+    iced::theme::Button::Custom(Box::new(theme))
 }
