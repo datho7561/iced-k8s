@@ -28,10 +28,10 @@ pub fn get_blue() -> Color {
     Color::from([10.0/255.0, 1.0/255.0, 79.0/255.0])
 }
 
-/// Teal Rose
+/// Cordovan
 /// secondary text
 pub fn get_grey() -> Color {
-    desaturate(Color::from([142.0/255.0, 62.0/255.0, 72.0/255.0]), 0.4)
+    Color::from([169.0/255.0, 112.0/255.0, 118.0/255.0])
 }
 
 /// Lilac
@@ -40,10 +40,10 @@ pub fn get_lilac() -> Color {
     Color::from([205.0/255.0, 159.0/255.0, 204.0/255.0])
 }
 
-/// TODO: replace, this is probably too harsh
+/// Deep wine
 /// black text
 pub fn get_black() -> Color {
-    Color::from([0.0, 0.0, 0.0])
+    Color::from([22.0/255.0, 4.0/255.0, 13.0/255.0])
 }
 
 /// desaturate the given colour.

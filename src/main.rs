@@ -1,6 +1,7 @@
 use crate::error::Error;
 use cluster::Cluster;
 use cluster_object::ClusterObject;
+use container_theme::{as_container_theme, ContainerTheme};
 use context_selector::ContextSelector;
 use custom_widgets::toast::{self, Toast};
 use iced::widget::{column, container, text};
@@ -12,10 +13,12 @@ use iced::{Application, Element};
 use messages::{ClusterMessage, Message};
 use std::time;
 
+mod button_theme;
 mod cluster;
 mod cluster_object;
 mod colours;
 mod constants;
+mod container_theme;
 mod context_selector;
 mod custom_widgets;
 mod error;
@@ -162,22 +165,21 @@ impl Application for WorkloadExplorer {
                     .style(colours::get_red()),]
                 .width(Length::Shrink),
             )
+            .style(as_container_theme(ContainerTheme::Light))
             .width(Length::Fill)
             .height(Length::Fill)
             .center_x()
             .center_y()
             .into()
         } else if self.cluster.is_some() {
-            container(self.cluster.as_ref().unwrap().view())
-                .width(Length::Fill)
-                .height(Length::Fill)
-                .into()
+            self.cluster.as_ref().unwrap().view()
         } else if self.context_selector.is_some() {
             self.context_selector.as_ref().unwrap().view()
         } else {
             container(text("loading..."))
                 .width(Length::Fill)
                 .height(Length::Fill)
+                .style(as_container_theme(ContainerTheme::Light))
                 .center_x()
                 .center_y()
                 .into()

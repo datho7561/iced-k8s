@@ -61,6 +61,7 @@ impl container::StyleSheet for Status {
         container::Appearance {
             background: Some(transparent_background.into()),
             text_color: pair.text.into(),
+            border_radius: sizes::BORDER_RADIUS.into(),
             ..Default::default()
         }
     }
@@ -142,13 +143,12 @@ where
                         .align_items(Alignment::Center)
                     )
                     .width(Length::Fill)
-                    .padding(sizes::SEP)
-                    .style(theme::Container::Custom(Box::new(toast.status))),
+                    .padding(sizes::SEP),
                     container(text(toast.body.as_str()).style(toast.status).size(sizes::P))
                         .width(Length::Fill)
-                        .padding(sizes::SEP)
-                        .style(theme::Container::Custom(Box::new(toast.status))),
+                        .padding(sizes::SEP),
                 ])
+                .style(theme::Container::Custom(Box::new(toast.status)))
                 .max_width(500)
                 .into()
             })
